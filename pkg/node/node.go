@@ -100,6 +100,7 @@ type Bee struct {
 	pssCloser                io.Closer
 	ethClientCloser          func()
 	transactionMonitorCloser io.Closer
+	transactionCloser        io.Closer
 	recoveryHandleCleanup    func()
 	listenerCloser           io.Closer
 	postageServiceCloser     io.Closer
@@ -249,6 +250,7 @@ func NewBee(addr string, swarmAddress swarm.Address, publicKey ecdsa.PublicKey, 
 			return nil, fmt.Errorf("init chain: %w", err)
 		}
 		b.ethClientCloser = swapBackend.Close
+		b.transactionCloser = tracerCloser
 		b.transactionMonitorCloser = transactionMonitor
 	}
 
@@ -695,7 +697,7 @@ func NewBee(addr string, swarmAddress swarm.Address, publicKey ecdsa.PublicKey, 
 		}
 
 		// inject dependencies and configure full debug api http path routes
-		debugAPIService.Configure(p2ps, pingPong, kad, lightNodes, storer, tagService, acc, pseudosettleService, o.SwapEnable, swapService, chequebookService, batchStore)
+		debugAPIService.Configure(p2ps, pingPong, kad, lightNodes, storer, tagService, acc, pseudosettleService, o.SwapEnable, swapService, chequebookService, batchStore, transactionService)
 	}
 
 	if err := kad.Start(p2pCtx); err != nil {
@@ -792,6 +794,7 @@ func (b *Bee) Shutdown(ctx context.Context) error {
 	go func() {
 		defer wg.Done()
 		tryClose(b.transactionMonitorCloser, "transaction monitor")
+		tryClose(b.transactionCloser, "transaction")
 	}()
 	go func() {
 		defer wg.Done()
