@@ -254,6 +254,8 @@ func NewBee(addr string, swarmAddress swarm.Address, publicKey ecdsa.PublicKey, 
 		b.transactionMonitorCloser = transactionMonitor
 	}
 
+	debugAPIService.ConfigureTX(transactionService)
+
 	if o.SwapEnable {
 		chequebookFactory, err = InitChequebookFactory(
 			logger,
